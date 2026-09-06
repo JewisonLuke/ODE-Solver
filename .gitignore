@@ -5,3 +5,5 @@ Main.obj
 Main.pdb
 vc140.pdb
 .vscode/
+Interpret.obj
+Interpret.pdb

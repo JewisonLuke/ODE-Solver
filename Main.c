@@ -9,10 +9,10 @@ int main() {
     int inputIdxNum = INPUT_SIZE;
     
     printf("Enter ODE: ");
-    scanf("%s", input);
+    fgets(input, INPUT_SIZE, stdin);
 
     for (int i = 0; i < INPUT_SIZE; i++) {
-        if (input[i] == '\0') {
+        if (input[i] == '\n') {
             inputIdxNum = i;
             break;
         }
@@ -23,9 +23,11 @@ int main() {
         return 1;
     }
 
-    interpret(input);
+    if (!interpret(input, inputIdxNum)) {
+        return 2;
+    }
 
-    printf("%s\n", input);
+    //printf("%s\n", input);
 
     return 0;
 }
