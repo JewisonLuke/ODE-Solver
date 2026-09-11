@@ -1,6 +1,4 @@
-#define INPUT_SIZE 100
-#define numValids 19
-#define numParen 10
+#include "Interpret.h"
 
 int strSize(char *input, int newLine) {
     int inputIdxNum = INPUT_SIZE;
@@ -716,18 +714,20 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
 
     // do the right side parentheses
     for (int i = 0; i < parenCount; i++) {
-        printf("working\n");
         isFirst = 1;
         lastCharOp = 1;
         int isStartChunk = 1;
         int yIdx;
         int isYChunk = 0;
+        int derivativeCount = -1;
         int j = 0;
         int parenNum = 0;
+        printf("Equation: %s\n", input);
         for (idx = parenStartIdx[i] + 1; idx < parenEndIdx[i]; idx++) {// start after the ( and end before the )
             if (input[idx] == ' ') {
                 continue;
             }
+            printf("%c\n", input[idx]);
             if (isStartChunk) {
                 isYChunk = 0;
                 j = idx;
@@ -737,9 +737,16 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                         continue;
                     }
                     if (input[j] == 'y') {
-                        isYChunk = 1;
-                        yIdx = idx;
-                        break;
+                        int primeCount = 0;
+                        while(input[j + primeCount + 1] == '\'') {
+                            primeCount++;
+                        }
+                        if (primeCount > derivativeCount) {
+                            derivativeCount = primeCount;
+                            isYChunk = 1;
+                            yIdx = idx;
+                            break;
+                        }
                     }
                     j++;
                 }
@@ -751,6 +758,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
             if (isYChunk) {
                 continue;
             }
+            
             if (input[idx] == '(') {
                 parenNum++;
             }
@@ -760,7 +768,6 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
             if (parenNum != 0) {
                 continue;
             }
-            printf("%c\n", input[idx]);
             if (isFirst && input[idx] == '-') {
                 postFix[postFixIdx] = '0';
                 postFixIdx++;

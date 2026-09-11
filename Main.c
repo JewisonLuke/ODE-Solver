@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "Interpret.c"
+#include "Interpret.h"
 
 #define INPUT_SIZE 100
 
