@@ -6,6 +6,7 @@
 int main() {
     char input[INPUT_SIZE];
     
+    
     printf("Enter Equation: ");
     fgets(input, INPUT_SIZE, stdin);
 
