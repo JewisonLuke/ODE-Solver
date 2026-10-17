@@ -1,5 +1,15 @@
 #include "Interpret.h"
 
+postFixIdx = 0;
+
+void postFixDebugging(int location, char c) {
+    int startLocation = 0;
+    int endLocation = 100;
+    if (location >= startLocation && location <= endLocation) {
+        //printf("Postfix location %d added %c at %d\n", location, c, postFixIdx);
+    }
+}
+
 int strSize(char *input, int newLine) {
     int inputIdxNum = INPUT_SIZE;
     for (int i = 0; i < INPUT_SIZE; i++) {
@@ -360,6 +370,10 @@ int eqOneSide(char *input, char *oneSideInput, int inputIdxNum, int eqType) {
             }
         }
     } while (!validChar);
+
+    if (oneSideInput[0] == '+') {
+        oneSideInput[0] = ' ';
+    }
     return oneSideIdxNum;
 }
 
@@ -398,7 +412,7 @@ int push(char c, char *stack, int *top) {
 
 char pop(char *stack, int *top) {
     if (*top == 0) {
-        return 0;
+        return 1;
     }
     (*top)--;
     char c = stack[*top];
@@ -420,12 +434,32 @@ char oppositeOp(char op) {
     return oppositeOp;
 }
 
+int findMaxOrder(char *input, int idxNum) {
+    int derivativeCount = -1;
+    int max = -1;
+    for (int i = 0; i < idxNum; i++) {
+        if (input[i] == 'y') {
+            derivativeCount = 0;
+            while (input[i+derivativeCount+1] == '\'') {
+                if (i+derivativeCount+1 == idxNum) {
+                    break;
+                } 
+                derivativeCount++;
+            }
+            if (derivativeCount > max) {
+                max = derivativeCount;
+            }
+        }
+    }
+    return max;
+}
+
 void generatePostFix(char *input, int idxNum, char *postFix) {
     int isFirst = 1;
     int idx = 0;
     int equalIdx = findIdx(input, idxNum, '=');
     static int charType;
-    static int postFixIdx = 0; // stack memory low
+    //static int postFixIdx = 0; // stack memory low
     char opStack[INPUT_SIZE];
     static int opStackTop = 0;
     static int parenOps[numParen];
@@ -444,6 +478,8 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
     static int yIdx = -1;
     static int derivativeCount = -1; // ran out of stack memory
     static int unPop = 0;
+    int numCount = 0;
+    int tempNumCount;
 
     while (idx < idxNum) {
         //printf("%c %d %d\n", input[idx], idx, idxNum);
@@ -455,6 +491,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
         if (idx == equalIdx) {
             while (parenOps[parenNum] > 0) {
                 postFix[postFixIdx] = pop(opStack, &opStackTop);
+                postFixDebugging(1, 'p');
                 postFixIdx++;
                 parenOps[parenNum]--;
             }
@@ -467,7 +504,10 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
 
         if (idx < equalIdx) {
             if (isFirst && input[idx] == '-') {
+                postFix[postFixIdx] = '1';
+                postFixIdx++;
                 postFix[postFixIdx] = '0';
+                postFixDebugging(2, '0');
                 postFixIdx++;
                 push('-', opStack, &opStackTop);
                 parenOps[parenNum]++;
@@ -479,13 +519,39 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
             }
             charType = typeChar(input[idx]);
             if (charType == 1) { //number just add it to the post fix, but add a * operator if it wasn't after an operator
-                postFix[postFixIdx] = input[idx];
-                postFixIdx++;
-                idx++;
+                numCount = 1;
+                while (typeChar(input[idx+numCount]) == 1 ) {
+                    numCount++;
+                    //printf("%d %c\n", idx, input[idx+numCount-1]);
+                }
+                tempNumCount = numCount;
+                while (tempNumCount > 0) {
+                    if (tempNumCount < 9) {
+                        postFix[postFixIdx] = tempNumCount + '0';
+                        postFixDebugging(3, tempNumCount + '0');
+                        postFixIdx++;
+                        tempNumCount = 0;
+                    } else {
+                        tempNumCount -= 9;
+                        postFix[postFixIdx] = '9';
+                        postFixIdx++;
+                        if (tempNumCount == 0) {
+                            postFix[postFixIdx] = '0';
+                            postFixIdx++;
+                        }
+                    }
+                }
+                do {
+                    postFix[postFixIdx] = input[idx];
+                    postFixIdx++;
+                    numCount--;
+                    idx++;
+                } while (numCount > 0);
                 if (popNext[parenNum]) {
                     //printf("%c %d\n", input[idx], idx);
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(4, 'p');
                         popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
                         parenOps[parenNum]--;
                         postFixIdx++;
@@ -509,6 +575,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                 } else {
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(5, 'p');
                         postFixIdx++;
                         parenOps[parenNum]--;
                     }
@@ -521,6 +588,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                 continue;
             } else if (charType == 3) { // variable add the variable and all derivatives, and if it wasnt right before an operator, add a *
                 postFix[postFixIdx] = input[idx];
+                postFixDebugging(6, input[idx]);
                 postFixIdx++;
                 idx++;
                 while(input[idx] == '\'') {
@@ -532,6 +600,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                     //printf("%c %d\n", input[idx], idx);
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(7, 'p');
                         popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
                         parenOps[parenNum]--;
                         postFixIdx++;
@@ -549,6 +618,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                     //printf("%c %d\n", input[idx], idx);
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(8, 'p');
                         popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
                         parenOps[parenNum]--;
                         postFixIdx++;
@@ -569,6 +639,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
             } else if (input[idx] == ')') { // pop all operators inside the parenthesis and leave parenthesis
                 while (parenOps[parenNum] > 0) {
                     postFix[postFixIdx] = pop(opStack, &opStackTop);
+                    postFixDebugging(9, 'p');
                     postFixIdx++;
                     parenOps[parenNum]--;
                 }
@@ -577,6 +648,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                     //printf("%c %d\n", input[idx], idx);
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(10, 'p');
                         popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
                         parenOps[parenNum]--;
                         postFixIdx++;
@@ -593,7 +665,10 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
             }
             lastCharEqual = 0;
             if (isFirst && input[idx] == '-') {
+                postFix[postFixIdx] = '1';
+                postFixIdx++;
                 postFix[postFixIdx] = '0';
+                postFixDebugging(11, '0');
                 postFixIdx++;
                 push('-', opStack, &opStackTop);
                 parenOps[parenNum]++;
@@ -608,13 +683,39 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
             if (parenNum == 0) {
                 //printf("%c %d %d %d %c\n", input[idx], idx, idxNum - 1, lastCharEqual, input[idxNum-1]);
             if (charType == 1) { //number just add it to the post fix, but add a * operator if it wasn't after an operator
-                postFix[postFixIdx] = input[idx];
-                postFixIdx++;
-                idx++;
+                numCount = 1;
+                while (typeChar(input[idx+numCount]) == 1 ) {
+                    numCount++;
+                    //printf("%d %c\n", idx, input[idx+numCount-1]);
+                }
+                tempNumCount = numCount;
+                while (tempNumCount > 0) {
+                    if (tempNumCount < 9) {
+                        postFix[postFixIdx] = tempNumCount + '0';
+                        postFixDebugging(12, tempNumCount + '0');
+                        postFixIdx++;
+                        tempNumCount = 0;
+                    } else {
+                        tempNumCount -= 9;
+                        postFix[postFixIdx] = '9';
+                        postFixIdx++;
+                        if (tempNumCount == 0) {
+                            postFix[postFixIdx] = '0';
+                            postFixIdx++;
+                        }
+                    }
+                }
+                do {
+                    postFix[postFixIdx] = input[idx];
+                    postFixIdx++;
+                    numCount--;
+                    idx++;
+                } while (numCount > 0);
                 if (popNext[parenNum]) {
                     //printf("%c %d\n", input[idx], idx);
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(13, 'p');
                         popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
                         parenOps[parenNum]--;
                         postFixIdx++;
@@ -638,6 +739,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                 } else {
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(14, 'p');
                         postFixIdx++;
                         parenOps[parenNum]--;
                     }
@@ -659,6 +761,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                         } // account for x2     
                         while (parenOps[parenNum] > 0) {
                             postFix[postFixIdx] = pop(opStack, &opStackTop);
+                            postFixDebugging(15, 'p');
                             popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
                             parenOps[parenNum]--;
                             postFixIdx++;
@@ -671,12 +774,14 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                     continue;
                 }                
                 postFix[postFixIdx] = input[idx];
+                postFixDebugging(16, input[idx]);
                 postFixIdx++;
                 idx++;
                 if (popNext[parenNum]) {
                     //printf("%c %d\n", input[idx], idx);
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(17, 'p');
                         popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
                         parenOps[parenNum]--;
                         postFixIdx++;
@@ -694,6 +799,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                 if (parenNum == 0) {
                     if (!lastCharOp) {
                         postFix[postFixIdx] = '/';
+                        postFixDebugging(18, '/');
                         //printf("%d\n", idx);
                         postFixIdx++;
                     } // account for 2(x)
@@ -716,6 +822,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                     //printf("%c %d\n", input[idx], idx);
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(19, 'p');
                         popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
                         parenOps[parenNum]--;
                         postFixIdx++;
@@ -729,6 +836,11 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
         }
     }
     
+    while (opStackTop > 0) {
+        postFix[postFixIdx] = pop(opStack, &opStackTop);
+        postFixDebugging(20, 'p');
+        postFixIdx++;
+    }
     // do the right side parentheses
 
     for (int i = 0; i < parenCount; i++) {
@@ -749,19 +861,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
         parenNum = 0;
         popNext[parenNum] = 0;
         //printf("Equation: %s\n", input);
-        for (idx = parenStartIdx[i] + 1; idx < parenEndIdx[i]; idx++) {
-            if (idx >= idxNum) {
-                parenEndIdx[i] = idx - 1;
-                printf("broken\n");
-                break;
-            }
-            if (input[idx] == 'y') {
-                derivativeCount = 0;
-                while (input[++idx] == '\'') {
-                    derivativeCount++;
-                }
-            }
-        }
+        derivativeCount = 0; //findMaxOrder(input, idxNum);
         for (idx = parenStartIdx[i] + 1; idx < parenEndIdx[i]; idx++) {// start after the ( and end before the )
             if (idx >= idxNum) {
                 printf("broken still\n");
@@ -770,7 +870,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
             if (input[idx] == ' ') {
                 continue;
             }
-            //printf("%d\n", idx);
+            //printf("%d %c \n", idx, input[idx]);
             if (input[idx] == '+' || input[idx] == '-') { // lines commented in here because im not sure why I added them
                 isStartChunk = 1;
                 isYChunk = 0;
@@ -787,6 +887,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                         continue;
                     }*/
                     postFix[postFixIdx] = popChar;
+                    postFixDebugging(21, popChar);
                     postFixIdx++;
                     parenOps[parenNum]--;
                 }
@@ -821,12 +922,12 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                 isStartChunk = 0;
             }
             if (isYChunk) {
-                //printf("working %d\n", idx);
                 if (input[idx] == '(') {
 
                     if (!lastCharOp) {
                         //printf("%d %c\n", idx, input[idx]);
                         postFix[postFixIdx] = '/';
+                        postFixDebugging(22, '/');
                         postFixIdx++;
                         if (!isFirst) {
                             unPop = 1;
@@ -835,10 +936,12 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                     }
                     while (popNext[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(23, 'p');
                         postFixIdx++;
                         popNext[parenNum]--;
                         parenOps[parenNum]--;
                     }
+                    lastCharOp = 0;
                     parenNum++;
                 }
                 if (input[idx] == ')') {
@@ -848,24 +951,60 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                     continue;
                 }
                 if (typeChar(input[idx]) == 1) {
-                    postFix[postFixIdx] = input[idx];
-                    postFixIdx++;
+                    numCount = 1;
+                    while (typeChar(input[idx+numCount]) == 1 ) {
+                        numCount++;
+                        //printf("%d %c\n", idx, input[idx+numCount-1]);
+                    }
+                    tempNumCount = numCount;
+                    while (tempNumCount > 0) {
+                        if (tempNumCount < 9) {
+                            postFix[postFixIdx] = tempNumCount + '0';
+                            postFixDebugging(24, tempNumCount + '0');
+                            postFixIdx++;
+                            tempNumCount = 0;
+                        } else {
+                            tempNumCount -= 9;
+                            postFix[postFixIdx] = '9';
+                            postFixIdx++;
+                            if (tempNumCount == 0) {
+                                postFix[postFixIdx] = '0';
+                                postFixIdx++;
+                            }
+                        }
+                    }
+                    do {
+                        postFix[postFixIdx] = input[idx];
+                        postFixIdx++;
+                        numCount--;
+                        idx++;
+                    } while (numCount > 0);
+                    idx--; // prevents skipping an index
+                    //printf("working %d\n", isFirst);
                     if (popNext[parenNum]) {
                         //printf("%c %d\n", input[idx], idx);
                         while (parenOps[parenNum] > 0) {
                             postFix[postFixIdx] = pop(opStack, &opStackTop);
+                            postFixDebugging(25, 'p');
                             popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
                             parenOps[parenNum]--;
                             postFixIdx++;
                         }
                     }
-                    postFix[postFixIdx] = '/';
-                    postFixIdx++;
-                    if (!lastCharOp) {
+                    /*postFix[postFixIdx] = '/';
+                    postFixDebugging(26, '/');
+                    printf("%d here\n", idx); // This is causing double division
+                    postFixIdx++; */
+                    /*if (!lastCharOp) {
                         push('/', opStack, &opStackTop);
                         parenOps[parenNum]++;
                         popNext[parenNum] = 1;
-                    } // account for x2                
+                    }*/ // account for x2
+                    if (!lastCharOp || isFirst) {
+                        postFix[postFixIdx] = '/';
+                        postFixDebugging(42, '/');
+                        postFixIdx++;
+                    }                
                     lastCharOp = 0;
                 } else if (typeChar(input[idx]) == 2) {
                     if (input[idx] != '+' && input[idx] != '-') {
@@ -879,19 +1018,25 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                         while (parenOps[parenNum] > 0) {
                             //printf("popped %d %c %d %d\n", idx, input[idx], parenNum, opStackTop);
                             postFix[postFixIdx] = pop(opStack, &opStackTop);
+                            postFixDebugging(27, 'p');
                             //printf("%c\n", postFix[postFixIdx]);
                             postFixIdx++;
                             parenOps[parenNum]--;
                         }
                         popNext[parenNum] = 0;
                         if (input[idx] == '-') {
+                            postFix[postFixIdx] = '1';
+                            postFixIdx++;
                             postFix[postFixIdx] = '0';
+                            postFixIdx++;
+                            postFix[postFixIdx] = '1';
                             postFixIdx++;
                             postFix[postFixIdx] = '1';
                             postFixIdx++;
                             postFix[postFixIdx] = '-';
                             postFixIdx++;
                             postFix[postFixIdx] = '/';
+                            postFixDebugging(28, '/');
                             postFixIdx++;
                         }
                         //printf("%d %c\n", idx, input[idx]);
@@ -900,27 +1045,37 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                     lastCharOp = 1;
                 } else if (typeChar(input[idx]) == 3) {
                     postFix[postFixIdx] = input[idx];
+                    postFixDebugging(29, input[idx]);
                     postFixIdx++;
                     int orderCount = 0;
                     while(input[idx + 1] == '\'') {
                         postFix[postFixIdx] = input[idx+1];
+                        //postFixDebugging(30, input[idx+1]);
                         postFixIdx++;
                         idx++;
                         orderCount++;
                     }
+                    derivativeCount = findMaxOrder(input, idxNum);
+                    if (orderCount == derivativeCount) {
+                        for (int num = 0; num <= orderCount; num++) { // all orders and y
+                            postFixIdx--;
+                            postFix[postFixIdx] = '\0';
+                        }
+                        continue;
+                    }
+                    derivativeCount = 0;
                     if (popNext[parenNum]) {
                         //printf("%c %d\n", input[idx], idx);
                         while (parenOps[parenNum] > 0) {
                             postFix[postFixIdx] = pop(opStack, &opStackTop);
+                            postFixDebugging(31, 'p');
                             popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
                             parenOps[parenNum]--;
                             postFixIdx++;
                         }
                     }
-                    if (orderCount == derivativeCount) {
-                        continue;
-                    }
                     postFix[postFixIdx] = '/';
+                    postFixDebugging(32, '/');
                     postFixIdx++;
                     /*if (!lastCharOp) {
                         push('/', opStack, &opStackTop);
@@ -928,7 +1083,9 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                         popNext[parenNum] = 1;
                     } // account for 2x */
                     lastCharOp = 0;
+                    isFirst = 0;
                 }
+                isFirst = 0;
                 continue;
             }
             else {
@@ -948,14 +1105,41 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
             }
             charType = typeChar(input[idx]);
             if (charType == 1) { //number just add it to the post fix, but add a * operator if it wasn't after an operator
-                //printf("idx: %d, %c, %d\n",idx, input[idx], parenNum);
-                postFix[postFixIdx] = input[idx];
-                postFixIdx++;
+                numCount = 1;
+                while (typeChar(input[idx+numCount]) == 1 ) {
+                    numCount++;
+                    //printf("%d %c\n", idx, input[idx+numCount-1]);
+                }
+                tempNumCount = numCount;
+                while (tempNumCount > 0) {
+                    if (tempNumCount < 9) {
+                        postFix[postFixIdx] = tempNumCount + '0';
+                        postFixDebugging(33, tempNumCount + '0');
+                        postFixIdx++;
+                        tempNumCount = 0;
+                    } else {
+                        tempNumCount -= 9;
+                        postFix[postFixIdx] = '9';
+                        postFixIdx++;
+                        if (tempNumCount == 0) {
+                            postFix[postFixIdx] = '0';
+                            postFixIdx++;
+                        }
+                    }
+                }
+                do {
+                    postFix[postFixIdx] = input[idx];
+                    postFixIdx++;
+                    numCount--;
+                    idx++;
+                } while (numCount > 0);
+                idx--; // the end of the for loop increments it, so this will prevent it from skipping one
                 //printf("%d %c\n", postFixIdx-1, postFix[postFixIdx-1]);
                 if (popNext[parenNum]) {
                     //printf("%c %d\n", input[idx], idx);
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(34, 'p');
                         popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
                         parenOps[parenNum]--;
                         postFixIdx++;
@@ -978,6 +1162,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                 } else {
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(35, 'p');
                         postFixIdx++;
                         parenOps[parenNum]--;
                     }
@@ -994,6 +1179,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                 continue;
             } else if (charType == 3) { // variable add the variable and all derivatives, and if it wasnt right before an operator, add a *
                 postFix[postFixIdx] = input[idx];
+                postFixDebugging(36, input[idx]);
                 postFixIdx++;
                 while(input[idx + 1] == '\'') {
                     postFix[postFixIdx] = input[idx+1];
@@ -1004,6 +1190,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                     //printf("%c %d\n", input[idx], idx);
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(37, 'p');
                         popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
                         parenOps[parenNum]--;
                         postFixIdx++;
@@ -1021,6 +1208,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                     //printf("%c %d\n", input[idx], idx);
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(38, 'p');
                         popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
                         parenOps[parenNum]--;
                         postFixIdx++;
@@ -1042,6 +1230,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
             } else if (input[idx] == ')') { // pop all operators inside the parenthesis and leave parenthesis
                 while (parenOps[parenNum] > 0) {
                     postFix[postFixIdx] = pop(opStack, &opStackTop);
+                    postFixDebugging(39, 'p');
                     postFixIdx++;
                     parenOps[parenNum]--;
                 }
@@ -1050,6 +1239,7 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
                     //printf("%c %d\n", input[idx], idx);
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(40, 'p');
                         popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
                         parenOps[parenNum]--;
                         postFixIdx++;
@@ -1129,7 +1319,8 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
         while (parenOps[parenNum] > 0) {
             int character = pop(opStack, &opStackTop);
             if (character != 0) {
-                postFix[postFixIdx];
+                postFix[postFixIdx] = character;
+                postFixDebugging(41, character);
                 postFixIdx++;
             }
             parenOps[parenNum]--;
