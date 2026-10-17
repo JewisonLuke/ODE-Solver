@@ -1,6 +1,6 @@
 #include "Interpret.h"
 
-postFixIdx = 0;
+//postFixIdx = 0;
 
 void postFixDebugging(int location, char c) {
     int startLocation = 0;
@@ -459,25 +459,25 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
     int idx = 0;
     int equalIdx = findIdx(input, idxNum, '=');
     static int charType;
-    //static int postFixIdx = 0; // stack memory low
+    static int postFixIdx = 0; // stack memory low
     char opStack[INPUT_SIZE];
-    static int opStackTop = 0;
-    static int parenOps[numParen];
+    static int opStackTop = 0; // honestly these two statics I have no clue why they need to be static but it breaks if they aren't
+    int parenOps[numParen];
     parenOps[0] = 0;
-    static int parenNum = 0;
-    static int popNext[numParen];
+    int parenNum = 0;
+    int popNext[numParen];
     popNext[0] = 0;
-    static int lastCharOp = 1;
-    static int popNum;
-    static int lastChar = 0;
-    static int lastCharEqual = 0;
+    int lastCharOp = 1;
+    int popNum;
+    int lastChar = 0;
+    int lastCharEqual = 0;
     int parenStartIdx[numParen];
     int parenEndIdx[numParen];
     int skipParen[numParen];
-    static int parenCount = 0;
-    static int yIdx = -1;
-    static int derivativeCount = -1; // ran out of stack memory
-    static int unPop = 0;
+    int parenCount = 0;
+    int yIdx = -1;
+    int derivativeCount = -1;
+    int unPop = 0;
     int numCount = 0;
     int tempNumCount;
 
