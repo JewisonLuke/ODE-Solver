@@ -1,4 +1,6 @@
 #include "Interpret.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 //postFixIdx = 0;
 
@@ -458,28 +460,34 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
     int isFirst = 1;
     int idx = 0;
     int equalIdx = findIdx(input, idxNum, '=');
-    static int charType;
-    static int postFixIdx = 0; // stack memory low
-    char opStack[INPUT_SIZE];
-    static int opStackTop = 0; // honestly these two statics I have no clue why they need to be static but it breaks if they aren't
-    int parenOps[numParen];
+    int charType;
+    int postFixIdx = 0;
+    char* opStack = (char*)malloc(INPUT_SIZE);
+    int opStackTop = 0;
+    int* parenOps = (int*)malloc(numParen*sizeof(int));
     parenOps[0] = 0;
     int parenNum = 0;
-    int popNext[numParen];
+    int* popNext = (int*)malloc(numParen*sizeof(int));
     popNext[0] = 0;
     int lastCharOp = 1;
     int popNum;
     int lastChar = 0;
     int lastCharEqual = 0;
-    int parenStartIdx[numParen];
-    int parenEndIdx[numParen];
-    int skipParen[numParen];
+    int* parenStartIdx = (int*)malloc(numParen*sizeof(int));
+    int* parenEndIdx = (int*)malloc(numParen*sizeof(int));
+    int* skipParen = (int*)malloc(numParen*sizeof(int));
     int parenCount = 0;
     int yIdx = -1;
     int derivativeCount = -1;
     int unPop = 0;
     int numCount = 0;
     int tempNumCount;
+
+    if (opStack == NULL || parenOps == NULL || popNext == NULL || parenStartIdx == NULL || parenEndIdx == NULL || skipParen == NULL) {
+        printf("Memory Allocation failed\n");
+        return;
+    }
+
 
     while (idx < idxNum) {
         //printf("%c %d %d\n", input[idx], idx, idxNum);
@@ -1393,13 +1401,20 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
     }*/
 
     postFix[postFixIdx] = '\0';
+
+    free(opStack);
+    free(parenOps);
+    free(popNext);
+    free(parenStartIdx);
+    free(parenEndIdx);
+    free(skipParen);
     return;
 }
 
 int interpret(char *input, int inputIdxNum, char *postFix) {
     if (!checkValidity(input, inputIdxNum)) {
         printf("Not a valid equation");
-        return 0;
+        return -1;
     }
 
     int eqType = equationType(input, inputIdxNum);    
@@ -1410,5 +1425,5 @@ int interpret(char *input, int inputIdxNum, char *postFix) {
     generatePostFix(oneSideInput, oneSideIdxNum, postFix);
     printf("%s\n", postFix);
 
-    return 1;
+    return eqType;
 }
