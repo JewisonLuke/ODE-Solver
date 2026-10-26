@@ -22,15 +22,24 @@ int main() {
     }
 
     char* postFix = (char*)malloc(INPUT_SIZE);
+    int postFixIdx;
     if (postFix == NULL) {
         printf("Memory Allocation Failed\n");
         return 3;
     }
 
-    int eqType = interpret(input, inputIdxNum, postFix);
+    int eqType = interpret(input, inputIdxNum, postFix, &postFixIdx);
     if (eqType < 0) {
         return 2;
     }
+    
+    float xi = -5;
+    float xf = 5;
+    float dx = 0.01;
+    float* x = (float*)malloc(sizeof(float)*((xf - xi) / dx));
+    float* y = (float*)malloc(sizeof(float)*((xf - xi) / dx));
+
+    solve(postFix, postFixIdx, eqType, xi, xf, dx, x, y);
 
     //printf("%s\n", input);
 

@@ -381,7 +381,7 @@ int eqOneSide(char *input, char *oneSideInput, int inputIdxNum, int eqType) {
 
 int typeChar(char c) {
     char nums[] = "0123456789";
-    char ops[] = "+-*/^";
+    char ops[] = "+-*/^r";
     char vars[] = "xy'";
     int type = -1;
     for (int i = 0; i < 10; i++) {
@@ -389,7 +389,7 @@ int typeChar(char c) {
             type = 1;
         }
     }
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 6; i++) {
         if (c == ops[i]) {
             type = 2;
         }
@@ -456,7 +456,7 @@ int findMaxOrder(char *input, int idxNum) {
     return max;
 }
 
-void generatePostFix(char *input, int idxNum, char *postFix) {
+void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
     int isFirst = 1;
     int idx = 0;
     int equalIdx = findIdx(input, idxNum, '=');
@@ -1408,10 +1408,12 @@ void generatePostFix(char *input, int idxNum, char *postFix) {
     free(parenStartIdx);
     free(parenEndIdx);
     free(skipParen);
+
+    (*ptr) = postFixIdx;
     return;
 }
 
-int interpret(char *input, int inputIdxNum, char *postFix) {
+int interpret(char *input, int inputIdxNum, char *postFix, int* ptr) {
     if (!checkValidity(input, inputIdxNum)) {
         printf("Not a valid equation");
         return -1;
@@ -1422,7 +1424,7 @@ int interpret(char *input, int inputIdxNum, char *postFix) {
     int oneSideIdxNum = eqOneSide(input, oneSideInput, inputIdxNum, eqType);
     printf("%s\n", oneSideInput);
 
-    generatePostFix(oneSideInput, oneSideIdxNum, postFix);
+    generatePostFix(oneSideInput, oneSideIdxNum, postFix, ptr);
     printf("%s\n", postFix);
 
     return eqType;

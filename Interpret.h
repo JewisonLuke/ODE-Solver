@@ -6,6 +6,7 @@
 #define numValids 19
 #define numParen 10
 
+void postFixDebugging(int location, char c);
 int strSize(char *input, int newLine);
 int findIdx(char *input, int inputIdxNum, char op);
 int checkValidity(char *input, int inputIdxNum);
@@ -19,5 +20,6 @@ int typeChar(char c);
 int push(char c, char *stack, int *top);
 char pop(char *stack, int *top);
 char oppositeOp(char op);
-void generatePostFix(char *input, int idxNum, char *postFix);
-int interpret(char *input, int inputIdxNum, char *postFix);
+int findMaxOrder(char *input, int idxNum);
+void generatePostFix(char *input, int idxNum, char *postFix, int* ptr);
+int interpret(char *input, int inputIdxNum, char *postFix, int *ptr);
