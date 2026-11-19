@@ -1,6 +1,5 @@
 #ifndef INTERPRET_H
 #define INTERPRET_H
-#endif
 
 #define INPUT_SIZE 100
 #define numValids 19
@@ -23,3 +22,5 @@ char oppositeOp(char op);
 int findMaxOrder(char *input, int idxNum);
 void generatePostFix(char *input, int idxNum, char *postFix, int* ptr);
 int interpret(char *input, int inputIdxNum, char *postFix, int *ptr);
+
+#endif

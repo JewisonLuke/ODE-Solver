@@ -80,7 +80,6 @@ float absoluteVal(float val) {
 }
 
 float power(float op1, float op2) {
-    float tolerance = 0.000001;
     if (absoluteVal(op2-round(op2)) <= tolerance) {
         return powerI(op1, (int)op2);
     }
@@ -182,13 +181,81 @@ float equation(char* postFix, int postFixIdx, float xval) {
     }
 
     //printf("result: %f\n", eqStack[eqStackTop - 1]);
-    return popF(eqStack, &eqStackTop);
+    float answer = popF(eqStack, &eqStackTop);
+    free(eqStack);
+    return answer;
 }
 
-int solve(char* postFix, int postFixIdx, int eqType, float xi, float xf, float dx, float* x, float* y) {
-    float xval = 0.5;
-    float result = equation(postFix, postFixIdx, xval);
-    printf("%f\n", result);
+float derivative(char* postFix, int postFixIdx, float xVal) {
+    float value = (equation(postFix, postFixIdx, xVal + h) - equation(postFix, postFixIdx, xVal)) / h;
+    return value;
+}
+
+float solveNewton(char* postFix, int postFixIdx, float startVal) {
+    int iterations = 15;
+    float xVal = startVal;
+    for (int i = 0; i < iterations; i++) {
+        xVal = startVal - (equation(postFix, postFixIdx, xVal) / derivative(postFix, postFixIdx, xVal));
+    }
+    return xVal;
+}
+
+void newton(char* postFix, int postFixIdx, float xi, float xf, float dx, float* x, float* y, float* zeros, int* size) {
+    int numVals = 0;
+    float prevVal = -1;
+    int init = 0;
+
+    for (int i = 0; i <= (int)((xf-xi)/dx); i++) {
+        x[i] = (float)(i)*dx + xi;
+        y[i] = equation(postFix, postFixIdx, x[i]);
+        if (!init) {
+            prevVal = y[i];
+            init = 1;
+            continue;
+        }
+        if (absoluteVal(y[i]) < tolerance) {
+            zeros[numVals] = x[i];
+            numVals++;
+        }
+        else if ((y[i] > 0 && prevVal < 0) || (y[i] < 0 && prevVal > 0)) {
+            zeros[numVals] = solveNewton(postFix, postFixIdx, x[i]);
+            numVals++;
+        }
+        prevVal = y[i];
+    }
+
+    if (numVals == 0) {
+        (*size) = 0;
+        free(zeros);
+        zeros = NULL;
+        return;
+    }
+    float* newZeros = (float*) realloc(zeros, sizeof(float)*numVals);
+    if (newZeros != NULL) {
+        zeros = newZeros;
+    }
+    else {
+        printf("realloc Failed\n");
+    }
+    
+    (*size) = numVals;
+
+    return;
+}
+
+int solveInputEq(char* postFix, int postFixIdx, int eqType, float xi, float xf, float dx, float* x, float* y, float* zeros, int* size) {
+    if (eqType == 1) {
+        newton(postFix, postFixIdx, xi, xf, dx, x, y, zeros, size);
+        return 1;
+    } else if (eqType == 2) {
+        for (int i = 0; i <= (int)((xf-xi)/dx); i++) {
+            x[i] = (float)(i)*dx + xi;
+            y[i] = equation(postFix, postFixIdx, x[i]);
+        }
+        return 1;
+    } else if (eqType == 3){
+
+    }
 
     return 1;
 }

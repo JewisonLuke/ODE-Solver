@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Interpret.h"
+#include "Solve.h"
+#include "Graph.h"
 
 #define INPUT_SIZE 100
 
@@ -33,13 +35,27 @@ int main() {
         return 2;
     }
     
-    float xi = -5;
-    float xf = 5;
-    float dx = 0.01;
-    float* x = (float*)malloc(sizeof(float)*((xf - xi) / dx));
-    float* y = (float*)malloc(sizeof(float)*((xf - xi) / dx));
+    float xi = -5.0f;
+    float xf = 5.0f;
+    float dx = 0.01f;
+    float* x = (float*)malloc(sizeof(float)*(int)(((xf - xi) / dx)));
+    float* y = (float*)malloc(sizeof(float)*(int)(((xf - xi) / dx)));
+    float* zeros = (float*) malloc(sizeof(float)*(int)(((xf - xi) / dx)));
+    int size = 0;
+    if (x == NULL || y == NULL || zeros == NULL) {
+        printf("Malloc Failed\n");
+        return 4;
+    }
+    solveInputEq(postFix, postFixIdx, eqType, xi, xf, dx, x, y, zeros, &size);
 
-    solve(postFix, postFixIdx, eqType, xi, xf, dx, x, y);
+    printf("%d Zeroes\n", size);
+    if (eqType == 1 && zeros != NULL) {
+        for (int i = 0; i < size; i++) {
+            printf("Zero %d: %f\n", i + 1, zeros[i]);
+        }
+    }
+
+    graph();
 
     //printf("%s\n", input);
 
