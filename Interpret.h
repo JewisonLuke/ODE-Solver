@@ -2,7 +2,7 @@
 #define INTERPRET_H
 
 #define INPUT_SIZE 100
-#define numValids 19
+#define numValids 28
 #define numParen 10
 
 void postFixDebugging(int location, char c);
@@ -21,6 +21,6 @@ char pop(char *stack, int *top);
 char oppositeOp(char op);
 int findMaxOrder(char *input, int idxNum);
 void generatePostFix(char *input, int idxNum, char *postFix, int* ptr);
-int interpret(char *input, int inputIdxNum, char *postFix, int *ptr);
+int interpret(char *input, int inputIdxNum, char *postFix, int *ptr, char* oneSideInput);
 
 #endif

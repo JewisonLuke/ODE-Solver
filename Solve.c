@@ -4,6 +4,56 @@
 #include <stdlib.h>
 #include <math.h>
 
+float cosine(float x) {
+    while (x > PI) {
+        x -= 2*PI;
+    }
+    while (x < -PI) {
+        x += 2*PI;
+    }
+    float sum = 0;
+    float temp;
+    for (int i = 0; i <= 6; i++) {
+        temp = 1;
+        if (i % 2 == 1) {
+            temp *= -1;
+        }
+        temp *= power(x, 2*i);
+        temp /= (float)factorial(2*i);
+        sum += temp;
+    }
+    return sum;
+}
+
+float sine(float x) {
+    while (x > PI) {
+        x -= 2*PI;
+    }
+    while (x < -PI) {
+        x += 2*PI;
+    }
+    float sum = 0;
+    float temp;
+    for (int i = 0; i <= 6; i++) {
+        temp = 1;
+        if (i % 2 == 1) {
+            temp *= -1;
+        }
+        temp *= power(x, 2*i + 1);
+        temp /= (float)factorial(2*i + 1);
+        sum += temp;
+    }
+    return sum;
+}
+
+float tangent(float x) {
+    float cosResult = cosine(x);
+    if (absoluteVal(cosResult) <= tolerance) {
+        return NAN;
+    }
+    return sine(x) / cosResult;
+}
+
 int factorial(int val) {
     if (val == 0) {
         return 1;
@@ -108,10 +158,21 @@ float equation(char* postFix, int postFixIdx, float xval) {
     int idx = 0;
     float* eqStack = (float*)malloc(INPUT_SIZE*sizeof(float));
     int eqStackTop = 0;
+    int numFunctions = 5;
+    int currFunc = -1;
+    float** funcStack = (float**)malloc(numFunctions*sizeof(float*));
+    int* funcStackTop = (int*)malloc(numFunctions*sizeof(int));
+    if (eqStack == NULL || funcStack == NULL || funcStackTop == NULL) {
+        return NAN;
+    }
+    float* stack = eqStack;
+    int* stackTop = &eqStackTop;
     int typeC;
     int number;
     float value;
     float op1, op2, result;
+    int decimalNum;
+    float temp;
     while(idx < postFixIdx) {
         //printf("character: %c\n", postFix[idx]);
         typeC = typeChar(postFix[idx]);
@@ -125,30 +186,45 @@ float equation(char* postFix, int postFixIdx, float xval) {
             idx++;
 
             value = 0;
+            decimalNum = 0;
             for (int i = 0; i < number; i++) {
-                value *= 10;
-                value += (float)(postFix[idx] - '0');
-                idx++;
+                if (postFix[idx] == '.') {
+                    decimalNum = 1;
+                    idx++;
+                    continue;
+                }
+                if (decimalNum == 0) {
+                    value *= 10;
+                    value += (float)(postFix[idx] - '0');
+                    idx++;
+                } else {
+                    temp = (float)(postFix[idx] - '0');
+                    for (int j = 0; j < decimalNum; j++) {
+                        temp /= 10;
+                    }
+                    value += temp;
+                    idx++;
+                }
             }
             //printf("pushed %f\n", value);
-            if (!pushF(value, eqStack, &eqStackTop)) {
+            if (!pushF(value, stack, stackTop)) {
                 return NAN;
             }
             continue;
         }
-        if (typeC == 3) {
+        else if (typeC == 3) {
             if (postFix[idx] == 'x') {
                 //printf("pushed %f\n", xval);
-                if (!pushF(xval, eqStack, &eqStackTop)) {
+                if (!pushF(xval, stack, stackTop)) {
                     return NAN;
                 }
             }
             idx++;
             continue;
         }
-        if (typeC == 2) {
-            op2 = popF(eqStack, &eqStackTop);
-            op1 = popF(eqStack, &eqStackTop);
+        else if (typeC == 2) {
+            op2 = popF(stack, stackTop);
+            op1 = popF(stack, stackTop);
             //printf("popped %f and %f\n", op1, op2);
             switch (postFix[idx]) {
                 case '+':
@@ -171,7 +247,63 @@ float equation(char* postFix, int postFixIdx, float xval) {
                     break;
             }
             //printf("pushed %f\n", result);
-            if (result == NAN || !pushF(result, eqStack, &eqStackTop)) {
+            if (result == NAN || !pushF(result, stack, stackTop)) {
+                return NAN;
+            }
+            idx++;
+            continue;
+        } if (postFix[idx] == 'f') {
+            currFunc++;
+            if (currFunc < numFunctions) {
+                funcStack[currFunc] = (float*)malloc(INPUT_SIZE*sizeof(float));
+                if (funcStack[currFunc] == NULL) {
+                    return NAN;
+                }
+            } else {
+                funcStack = (float**)realloc(funcStack, 2*numFunctions*sizeof(float*));
+                funcStackTop = (int*)realloc(funcStackTop, 2*numFunctions*sizeof(int));
+                numFunctions *= 2;
+                if (funcStack == NULL || funcStackTop == NULL) {
+                    return NAN;
+                }
+                funcStack[currFunc] = (float*)malloc(INPUT_SIZE*sizeof(float));
+                if (funcStack[currFunc] == NULL) {
+                    return NAN;
+                }
+            }
+            funcStackTop[currFunc] = 0;
+            stack = funcStack[currFunc];
+            stackTop = &funcStackTop[currFunc];
+        } else if (typeC == 4) {
+            op1 = popF(stack, stackTop);
+            free(funcStack[currFunc]);
+            currFunc--;
+            if (currFunc < 0) {
+                stack = eqStack;
+                stackTop = &eqStackTop;
+            } else {
+                stack = funcStack[currFunc];
+                stackTop = &funcStackTop[currFunc];
+            }
+            switch(postFix[idx]) {
+                case 'c':
+                    result = cosine(op1);
+                    break;
+                case 's':
+                    result = sine(op1);
+                    break;
+                case 't':
+                    result = tangent(op1);
+                    break;
+            }
+            if (result == NAN || !pushF(result, stack, stackTop)) {
+                return NAN;
+            }
+            idx++;
+            continue;
+        } else if (typeC == 5) {
+            //printf("pushed %f\n", value);
+            if (!pushF(e, stack, stackTop)) {
                 return NAN;
             }
             idx++;
@@ -183,6 +315,8 @@ float equation(char* postFix, int postFixIdx, float xval) {
     //printf("result: %f\n", eqStack[eqStackTop - 1]);
     float answer = popF(eqStack, &eqStackTop);
     free(eqStack);
+    free(funcStack);
+    free(funcStackTop);
     return answer;
 }
 

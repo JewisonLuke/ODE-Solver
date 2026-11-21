@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//postFixIdx = 0;
+//int postFixIdx = 0;
 
 void postFixDebugging(int location, char c) {
     int startLocation = 0;
@@ -34,13 +34,13 @@ int findIdx(char *input, int inputIdxNum, char op) {
 }
 
 int checkValidity(char *input, int inputIdxNum) {
-    char validChars[numValids] = "1234567890xy- +/*^"; // last char is the \0 char
+    char validChars[numValids] = "1234567890xy-cste +/*^oina."; // last char is the \0 char
     int valid = 1;
     int numEqual = 0;
     int foundNum = 0;
 
-    char validStart[] = "0123456789-xy(";
-    int validStarts = 14;
+    char validStart[] = "0123456789-xy(cste";
+    int validStarts = 18;
 
     int parenCount = 0;
     char prevChar = '('; // because each side of the equation can start with (
@@ -95,9 +95,9 @@ int checkValidity(char *input, int inputIdxNum) {
             for (int j = 0; j < numValids - 1; j++) {
                 if (input[i] == validChars[j]) {
                     validChar = 1;
-                    if (!foundNum && j > 13) {
+                    if (!foundNum && j > 17) {
                         valid = 0; // operator can't be first
-                    } else if (j < 13) {
+                    } else if (j < 17) {
                         foundNum = 1;
                     }
                     break;
@@ -120,6 +120,52 @@ int checkValidity(char *input, int inputIdxNum) {
     }
     if (parenCount != 0) {
         valid = 0;
+    }
+    int i = 0;
+    while (i < inputIdxNum) {
+        switch (input[i]) {
+            case 'c':
+                if (i >= inputIdxNum - 1 || input[i+1] != 'o') {
+                    valid = 0;
+                }
+                break;
+            case 'o':
+                if (i >= inputIdxNum - 1 || i <= 0 || input[i - 1] != 'c' || input[i + 1] != 's') {
+                    valid = 0;
+                }
+                break;
+            case 's':
+                if ((i <= 0 || i >= inputIdxNum - 1 || input[i - 1] != 'o' || input[i + 1] != '(') &&
+                 (i >= inputIdxNum - 1 || input[i + 1] != 'i')) {
+                    valid = 0;
+                 }
+                break;
+            case 'i':
+                 if (i <= 0 || i >= inputIdxNum - 1 || input[i - 1] != 's' || input[i + 1] != 'n') {
+                    valid = 0;
+                 }
+                break;
+            case 'n':
+                if ((i <= 0 || i >= inputIdxNum - 1 || (input[i - 1] != 'i' && input[i - 1] != 'a') || input[i + 1] != '(')) {
+                    valid = 0;
+                 }
+                break;
+            case 't':
+                if (i >= inputIdxNum - 1 || input[i+1] != 'a') {
+                    valid = 0;
+                }
+                break;
+            case 'a':
+                if (i <= 0 || i >= inputIdxNum - 1 || input[i - 1] != 't' || input[i + 1] != 'n') {
+                    valid = 0;
+                 }
+                break;
+            case '.':
+                 if (i <= 0 || i >= inputIdxNum - 1 || typeChar(input[i-1]) != 1 || typeChar(input[i+1]) != 1) {
+                    valid = 0;
+                 }
+        }
+        i++;
     }
 
     return valid;
@@ -302,7 +348,7 @@ int eqOneSide(char *input, char *oneSideInput, int inputIdxNum, int eqType) {
     }
     
     int equalIdx = findIdx(input, inputIdxNum,'=');
-    int chunks[INPUT_SIZE/2];
+    int* chunks = (int*)malloc(INPUT_SIZE/2);
     int numChunks = findChunks(input, inputIdxNum, chunks);
     int idx = 0;
 
@@ -343,10 +389,13 @@ int eqOneSide(char *input, char *oneSideInput, int inputIdxNum, int eqType) {
     }
 
     int oneSideIdxNum = strSize(oneSideInput, 0);
-    int oneSideChunks[INPUT_SIZE/2];
+    int* oneSideChunks = (int*)malloc(INPUT_SIZE/2);
     int oneSideNumChunks = findChunks(oneSideInput, oneSideIdxNum, oneSideChunks);
     int highestChunk = findHighChunk(oneSideInput, oneSideIdxNum, oneSideChunks, oneSideNumChunks, eqType); // find the y''' or y or highest order
-
+    int invert = 0;
+    if (highestChunk < equalIdx && highestChunk >= 0) {
+        invert = 1;
+    }
     //printf("%s\n", oneSideInput);
     if (eqType != 1) {
         oneSideIdxNum = swapChunk(oneSideInput, oneSideIdxNum, oneSideChunks, highestChunk);
@@ -356,9 +405,9 @@ int eqOneSide(char *input, char *oneSideInput, int inputIdxNum, int eqType) {
         oneSideInput[oneSideIdxNum] = '\0';
     }
 
-    char validChars[] = "0123456789xy')";
+    char validChars[] = "0123456789xy')e";
     int validChar;
-    int maxChars = 14; // remove an accidental space at the end
+    int maxChars = 15; // remove an accidental space at the end
     do {
         for (int i = 0; i < maxChars; i++) {
             if (oneSideInput[oneSideIdxNum - 1] == validChars[i]) {
@@ -376,6 +425,20 @@ int eqOneSide(char *input, char *oneSideInput, int inputIdxNum, int eqType) {
     if (oneSideInput[0] == '+') {
         oneSideInput[0] = ' ';
     }
+    if (oneSideInput[oneSideIdxNum - 1] == '0') {
+        oneSideIdxNum--;
+        while(oneSideInput[oneSideIdxNum - 1] == ' ') {
+            oneSideIdxNum--;
+        }
+        if (oneSideInput[oneSideIdxNum - 1] == '+' || oneSideInput[oneSideIdxNum - 1] == '-') {
+            oneSideIdxNum--;
+        }
+    }
+    if (invert) {
+        oneSideInput[oneSideIdxNum] = '=';
+        oneSideIdxNum++;
+    }
+    oneSideInput[oneSideIdxNum] = '\0';
     return oneSideIdxNum;
 }
 
@@ -383,6 +446,7 @@ int typeChar(char c) {
     char nums[] = "0123456789";
     char ops[] = "+-*/^r";
     char vars[] = "xy'";
+    char func[] = "cst";
     int type = -1;
     for (int i = 0; i < 10; i++) {
         if (c == nums[i]) {
@@ -398,6 +462,14 @@ int typeChar(char c) {
         if (c == vars[i]) {
             type = 3;
         }
+    }
+    for (int i = 0; i < 3; i++) {
+        if (c == func[i]) {
+            type = 4;
+        }
+    }
+    if (c == 'e') {
+        type = 5;
     }
     return type;
 }
@@ -456,10 +528,46 @@ int findMaxOrder(char *input, int idxNum) {
     return max;
 }
 
+int isYchunk(char* arr, int order) {
+    int idx = 0;
+    int maxOrder = -2;
+    int currOrder = -2;
+    int parenCount = 0;
+    while (arr[idx] != '\0') {
+        if (arr[idx] == 'y') {
+            currOrder = 0;
+            while (arr[idx + 1] == '\'') {
+                currOrder++;
+                idx++;
+            }
+            if (currOrder > maxOrder) {
+                maxOrder = currOrder;
+            }
+        }
+        if (arr[idx] == '(') {
+            parenCount++;
+        } else if (arr[idx] == ')') {
+            parenCount--;
+        } else if (parenCount == 0 && (arr[idx] == '+' || arr[idx] == '-')) {
+            break;
+        }
+        idx++;
+    }
+    if (maxOrder == order) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
     int isFirst = 1;
     int idx = 0;
     int equalIdx = findIdx(input, idxNum, '=');
+    int invert = 0;
+    if (equalIdx == idxNum - 1) {
+        invert = 1;
+    }
     int charType;
     int postFixIdx = 0;
     char* opStack = (char*)malloc(INPUT_SIZE);
@@ -528,7 +636,7 @@ void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
             charType = typeChar(input[idx]);
             if (charType == 1) { //number just add it to the post fix, but add a * operator if it wasn't after an operator
                 numCount = 1;
-                while (typeChar(input[idx+numCount]) == 1 ) {
+                while (typeChar(input[idx+numCount]) == 1 || input[idx+numCount] == '.') {
                     numCount++;
                     //printf("%d %c\n", idx, input[idx+numCount-1]);
                 }
@@ -621,8 +729,45 @@ void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
                 } // account for 2x
                 lastCharOp = 0;
                 continue;
-            } else if (input[idx] == '(') { // if it wasn't an operator before, add *, then enter a parenthesis
+            } else if (charType == 4) {
+                if (!lastCharOp) {
+                    push('*', opStack, &opStackTop);
+                    parenOps[parenNum]++;
+                    popNext[parenNum] = 1;
+                }
+                postFix[postFixIdx] = 'f';
+                postFixIdx++;
+                push(input[idx], opStack, &opStackTop);
+                parenOps[parenNum]++;
+                //printf("%c\n", input[idx]);
+                popNext[parenNum] = 1;
+                //printf("paren Num: %d\n", parenNum);
+                idx += 3;
+                lastCharOp = 1;
+                continue;
+            } else if (charType == 5) {
+                postFix[postFixIdx] = 'e';
+                postFixIdx++;
                 if (popNext[parenNum]) {
+                    //printf("%c %d\n", input[idx], idx);
+                    while (parenOps[parenNum] > 0) {
+                        postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(4, 'p');
+                        popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
+                        parenOps[parenNum]--;
+                        postFixIdx++;
+                    }
+                }
+                if (!lastCharOp) {
+                    push('*', opStack, &opStackTop);
+                    parenOps[parenNum]++;
+                    popNext[parenNum] = 1;
+                } // account for x2                
+                lastCharOp = 1;
+                idx++;
+                continue;
+            } else if (input[idx] == '(') { // if it wasn't an operator before, add *, then enter a parenthesis
+                /*if (popNext[parenNum]) {
                     //printf("%c %d\n", input[idx], idx);
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
@@ -631,7 +776,7 @@ void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
                         parenOps[parenNum]--;
                         postFixIdx++;
                     }
-                }
+                } */
                 if (!lastCharOp) {
                     push('*', opStack, &opStackTop);
                     parenOps[parenNum]++;
@@ -673,12 +818,29 @@ void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
             }
             lastCharEqual = 0;
             if (isFirst && input[idx] == '-') {
-                postFix[postFixIdx] = '1';
-                postFixIdx++;
-                postFix[postFixIdx] = '0';
-                postFixDebugging(11, '0');
-                postFixIdx++;
-                push('-', opStack, &opStackTop);
+                derivativeCount = findMaxOrder(input, idxNum);
+                if (isYchunk(input + idx + 1, derivativeCount)) {
+                    postFix[postFixIdx] = '1';
+                    postFixIdx++;
+                    postFix[postFixIdx] = '0';
+                    postFixDebugging(11, '0');
+                    postFixIdx++;
+                    postFix[postFixIdx] = '1';
+                    postFixIdx++;
+                    postFix[postFixIdx] = '1';
+                    postFixIdx++;
+                    postFix[postFixIdx] = '-';
+                    postFixIdx++;
+                    postFix[postFixIdx] = '/';
+                    postFixIdx++;
+                } else {
+                    postFix[postFixIdx] = '1';
+                    postFixIdx++;
+                    postFix[postFixIdx] = '0';
+                    postFixDebugging(11, '0');
+                    postFixIdx++;
+                    push('-', opStack, &opStackTop);
+                }
                 parenOps[parenNum]++;
                 idx++;
                 isFirst = 0;
@@ -692,7 +854,7 @@ void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
                 //printf("%c %d %d %d %c\n", input[idx], idx, idxNum - 1, lastCharEqual, input[idxNum-1]);
             if (charType == 1) { //number just add it to the post fix, but add a * operator if it wasn't after an operator
                 numCount = 1;
-                while (typeChar(input[idx+numCount]) == 1 ) {
+                while (typeChar(input[idx+numCount]) == 1 || input[idx+numCount] == '.') {
                     numCount++;
                     //printf("%d %c\n", idx, input[idx+numCount-1]);
                 }
@@ -760,13 +922,13 @@ void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
                 continue;
             } else if (charType == 3) { // variable add the variable and all derivatives, and if it wasnt right before an operator, add a *
                 if (input[idx] == 'y') {
-                    if (popNext[parenNum]) {
-                        //printf("%c %d\n", input[idx], idx);
-                        if (!lastCharOp) {
+                    if (!lastCharOp) {
                             push('/', opStack, &opStackTop);
                             parenOps[parenNum]++;
                             popNext[parenNum] = 1;
-                        } // account for x2     
+                        } // account for x2  
+                    if (popNext[parenNum]) {
+                        //printf("%c %d\n", input[idx], idx);   
                         while (parenOps[parenNum] > 0) {
                             postFix[postFixIdx] = pop(opStack, &opStackTop);
                             postFixDebugging(15, 'p');
@@ -801,6 +963,43 @@ void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
                     popNext[parenNum] = 1;
                 } // account for 2x
                 lastCharOp = 0;
+                continue;
+            } else if (charType == 4) {
+                if (!lastCharOp) {
+                    push('/', opStack, &opStackTop);
+                    parenOps[parenNum]++;
+                    popNext[parenNum] = 1;
+                }
+                postFix[postFixIdx] = 'f';
+                postFixIdx++;
+                push(input[idx], opStack, &opStackTop);
+                parenOps[parenNum]++;
+                //printf("%c\n", input[idx]);
+                popNext[parenNum] = 1;
+                //printf("paren Num: %d\n", parenNum);
+                idx += 3;
+                lastCharOp = 0;
+                continue;
+            } else if (charType == 5) {
+                postFix[postFixIdx] = 'e';
+                postFixIdx++;
+                if (popNext[parenNum]) {
+                    //printf("%c %d\n", input[idx], idx);
+                    while (parenOps[parenNum] > 0) {
+                        postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(13, 'p');
+                        popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
+                        parenOps[parenNum]--;
+                        postFixIdx++;
+                    }
+                }
+                if (!lastCharOp) {
+                    push('/', opStack, &opStackTop);
+                    parenOps[parenNum]++;
+                    popNext[parenNum] = 1;
+                } // account for x2                
+                lastCharOp = 1;
+                idx++;
                 continue;
             }
             } if (input[idx] == '(') { // if it wasn't an operator before, add *, then enter a parenthesis
@@ -960,7 +1159,7 @@ void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
                 }
                 if (typeChar(input[idx]) == 1) {
                     numCount = 1;
-                    while (typeChar(input[idx+numCount]) == 1 ) {
+                    while (typeChar(input[idx+numCount]) == 1 || input[idx+numCount] == '.') {
                         numCount++;
                         //printf("%d %c\n", idx, input[idx+numCount-1]);
                     }
@@ -1092,6 +1291,50 @@ void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
                     } // account for 2x */
                     lastCharOp = 0;
                     isFirst = 0;
+                } else if (typeChar(input[idx]) == 4) {
+                    postFix[postFixIdx] = 'f';
+                    postFixIdx++;
+                    push(input[idx], opStack, &opStackTop);
+                    parenOps[parenNum]++;
+                    //printf("%c\n", input[idx]);
+                    popNext[parenNum] = 1;
+                    //printf("paren Num: %d\n", parenNum);
+                    idx += 2;
+                    if (!lastCharOp) {
+                        postFix[postFixIdx] = '/';
+                        postFixIdx++;
+                    }
+                    lastCharOp = 1;
+                    continue;
+                } else if (typeChar(input[idx]) == 5) {
+                    postFix[postFixIdx] = 'e';
+                    postFixIdx++;
+                    //printf("working %d\n", isFirst);
+                    if (popNext[parenNum]) {
+                        //printf("%c %d\n", input[idx], idx);
+                        while (parenOps[parenNum] > 0) {
+                            postFix[postFixIdx] = pop(opStack, &opStackTop);
+                            postFixDebugging(25, 'p');
+                            popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
+                            parenOps[parenNum]--;
+                            postFixIdx++;
+                        }
+                    }
+                    /*postFix[postFixIdx] = '/';
+                    postFixDebugging(26, '/');
+                    printf("%d here\n", idx); // This is causing double division
+                    postFixIdx++; */
+                    /*if (!lastCharOp) {
+                        push('/', opStack, &opStackTop);
+                        parenOps[parenNum]++;
+                        popNext[parenNum] = 1;
+                    }*/ // account for x2
+                    if (!lastCharOp || isFirst) {
+                        postFix[postFixIdx] = '/';
+                        postFixDebugging(42, '/');
+                        postFixIdx++;
+                    }                
+                    lastCharOp = 0;
                 }
                 isFirst = 0;
                 continue;
@@ -1114,7 +1357,7 @@ void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
             charType = typeChar(input[idx]);
             if (charType == 1) { //number just add it to the post fix, but add a * operator if it wasn't after an operator
                 numCount = 1;
-                while (typeChar(input[idx+numCount]) == 1 ) {
+                while (typeChar(input[idx+numCount]) == 1 || input[idx+numCount] == '.') {
                     numCount++;
                     //printf("%d %c\n", idx, input[idx+numCount-1]);
                 }
@@ -1211,8 +1454,46 @@ void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
                 } // account for 2x
                 lastCharOp = 0;
                 continue;
-            } else if (input[idx] == '(') { // if it wasn't an operator before, add *, then enter a parenthesis
+            } else if (charType == 4) {
+                if (!lastCharOp) {
+                    push('*', opStack, &opStackTop);
+                    parenOps[parenNum]++;
+                    popNext[parenNum] = 1;
+                }
+                postFix[postFixIdx] = 'f';
+                postFixIdx++;
+                push(input[idx], opStack, &opStackTop);
+                parenOps[parenNum]++;
+                //printf("%c\n", input[idx]);
+                popNext[parenNum] = 1;
+                //printf("paren Num: %d\n", parenNum);
+                idx += 2;
+                lastCharOp = 1;
+                continue;
+            } else if (charType == 5) {
+                postFix[postFixIdx] = 'e';
+                postFixIdx++;
+                //printf("%d %c\n", postFixIdx-1, postFix[postFixIdx-1]);
                 if (popNext[parenNum]) {
+                    //printf("%c %d\n", input[idx], idx);
+                    while (parenOps[parenNum] > 0) {
+                        postFix[postFixIdx] = pop(opStack, &opStackTop);
+                        postFixDebugging(34, 'p');
+                        popNext[parenNum] = 0; // do x^2*... instead of x^(2*...)
+                        parenOps[parenNum]--;
+                        postFixIdx++;
+                    }
+                }
+                if (!lastCharOp) {
+                    push('*', opStack, &opStackTop);
+                    parenOps[parenNum]++;
+                    popNext[parenNum] = 1;
+                } // account for x2                
+                lastCharOp = 0;
+                continue;
+            }
+            else if (input[idx] == '(') { // if it wasn't an operator before, add *, then enter a parenthesis
+                /*if (popNext[parenNum]) {
                     //printf("%c %d\n", input[idx], idx);
                     while (parenOps[parenNum] > 0) {
                         postFix[postFixIdx] = pop(opStack, &opStackTop);
@@ -1221,7 +1502,7 @@ void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
                         parenOps[parenNum]--;
                         postFixIdx++;
                     }
-                }
+                } */
                 if (!lastCharOp) {
                     push('*', opStack, &opStackTop);
                     parenOps[parenNum]++;
@@ -1400,6 +1681,21 @@ void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
         postFixIdx++;
     }*/
 
+    if (invert) {
+        postFix[postFixIdx] = '1';
+        postFixIdx++;
+        postFix[postFixIdx] = '0';
+        postFixIdx++;
+        postFix[postFixIdx] = '1';
+        postFixIdx++;
+        postFix[postFixIdx] = '1';
+        postFixIdx++;
+        postFix[postFixIdx] = '-';
+        postFixIdx++;
+        postFix[postFixIdx] = '*';
+        postFixIdx++; 
+    }
+
     postFix[postFixIdx] = '\0';
 
     free(opStack);
@@ -1413,15 +1709,24 @@ void generatePostFix(char *input, int idxNum, char *postFix, int* ptr) {
     return;
 }
 
-int interpret(char *input, int inputIdxNum, char *postFix, int* ptr) {
+int interpret(char *input, int inputIdxNum, char *postFix, int* ptr, char* oneSideInput) {
     if (!checkValidity(input, inputIdxNum)) {
         printf("Not a valid equation");
         return -1;
     }
 
     int eqType = equationType(input, inputIdxNum);    
-    char oneSideInput[INPUT_SIZE];
     int oneSideIdxNum = eqOneSide(input, oneSideInput, inputIdxNum, eqType);
+    int equalCount = 0;
+    for (int i = 0; i < oneSideIdxNum; i++) {
+        if (oneSideInput[i] == '=') {
+            equalCount++;
+        }
+        if (i == oneSideIdxNum - 1 && oneSideInput[i] == '=' && equalCount > 1) {
+            oneSideInput[i] = '\0';
+            oneSideIdxNum--;
+        }
+    }
     printf("%s\n", oneSideInput);
 
     generatePostFix(oneSideInput, oneSideIdxNum, postFix, ptr);

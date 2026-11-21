@@ -5,7 +5,13 @@
 #define e 2.7182818285f
 #define tolerance 0.000001f
 #define h 0.0001f
+#define PI 3.1415926536f
 
+float cosine(float x);
+float sine(float x);
+float tangent(float x);
+int factorial(int val);
+float powerI(float val, int power);
 float ePower(float val);
 float ln(float val);
 float absoluteVal(float val);
